@@ -2,7 +2,6 @@ import Joi from 'joi';
 
 export const ItemDataSchema = Joi.object({
   title: Joi.string().required(),
-  content: Joi.string().required(),
 }).label('ItemData').required();
 
 export const ItemSchema = ItemDataSchema.keys({
