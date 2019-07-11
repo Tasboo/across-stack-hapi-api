@@ -7,6 +7,7 @@ export const ItemDataSchema = Joi.object({
 export const ItemSchema = ItemDataSchema.keys({
   id: Joi.number().required(),
   completed: Joi.boolean().required(),
+  url: Joi.string().required(),
 }).label('Item').required();
 
 export type ItemData = Joi.SchemaValue<typeof ItemDataSchema>;
@@ -29,6 +30,7 @@ export async function createItem(itemData: ItemData): Promise<Item> {
   const newItem = {
     id,
     completed: false,
+    url: `/items/${id}`,
     ...itemData,
   };
 
