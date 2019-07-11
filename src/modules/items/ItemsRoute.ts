@@ -9,6 +9,7 @@ import {
   updateItem,
   deleteItem,
   ItemDataSchema,
+  deleteAllItems,
 } from 'src/models/Item';
 
 export const ItemRoutePlugin: Plugin<never> = {
@@ -113,6 +114,22 @@ export const ItemRoutePlugin: Plugin<never> = {
         async handler(request) {
           const { id } = request.params;
           await deleteItem(id);
+          return null;
+        },
+      });
+
+      /** delete all items */
+      await server.route({
+        method: 'DELETE',
+        path: '/',
+        options: {
+          tags: ['api'],
+          response: {
+            schema: null,
+          },
+        },
+        async handler() {
+          await deleteAllItems();
           return null;
         },
       });

@@ -52,3 +52,7 @@ export async function updateItem(id: Item['id'], itemData: ItemData): Promise<vo
 export async function deleteItem(id: Item['id']): Promise<void> {
   items = items.filter(i => i.id !== id);
 }
+
+export async function deleteAllItems(): Promise<void> {
+  items = [];
+}
