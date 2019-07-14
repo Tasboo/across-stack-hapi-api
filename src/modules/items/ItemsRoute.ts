@@ -10,128 +10,145 @@ import {
   deleteItem,
   ItemDataSchema,
   deleteAllItems,
+  Item,
 } from 'src/models/Item';
 
+const ItemResponseSchema = ItemSchema.keys({
+  url: Joi.string().required(),
+}).required();
+type ItemResponse = Joi.SchemaValue<typeof ItemResponseSchema>;
+
 export const ItemRoutePlugin: Plugin<never> = {
-    name: 'Item Routes',
-    async register(server) {
-      await server.route({
-        method: 'GET',
-        path: '/',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: Joi.array()
-              .items(ItemSchema.optional())
-              .required(),
-          },
-        },
-        async handler() {
-          return getAllItems();
-        },
-      });
+  name: 'Item Routes',
+  async register(server) {
+    const BASE_ROUTE_URL = server.info.uri + server.realm.modifiers.route.prefix;
 
-      await server.route({
-        method: 'GET',
-        path: '/{id}',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: ItemSchema.required(),
-          },
-          validate: {
-            params: Joi.object({
-              id: Joi.number().required(),
-            }).required(),
-          },
-        },
-        async handler(request) {
-          const { id } = request.params;
+    function mapItemToItemResponse(item: Item): ItemResponse {
+      return {
+        ...item,
+        url: BASE_ROUTE_URL + '/' + item.id,
+      };
+    }
 
-          const item = await getItemById(id);
-          if (!item) {
-            throw Boom.notFound('Item not found!');
-          }
+    await server.route({
+      method: 'GET',
+      path: '/',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: Joi.array()
+            .items(ItemResponseSchema.optional())
+            .required(),
+        },
+      },
+      async handler() {
+        return (await getAllItems()).map(mapItemToItemResponse);
+      },
+    });
 
-          return item;
+    await server.route({
+      method: 'GET',
+      path: '/{id}',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: ItemResponseSchema,
         },
-      });
+        validate: {
+          params: Joi.object({
+            id: Joi.number().required(),
+          }).required(),
+        },
+      },
+      async handler(request) {
+        const { id } = request.params;
 
-      await server.route({
-        method: 'POST',
-        path: '/',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: ItemSchema.required(),
-          },
-          validate: {
-            payload: ItemDataSchema.required(),
-          },
-        },
-        async handler(request) {
-          const item = await createItem(request.payload);
-          return item;
-        },
-      });
+        const item = await getItemById(id);
+        if (!item) {
+          throw Boom.notFound('Item not found!');
+        }
 
-      await server.route({
-        method: 'PUT',
-        path: '/{id}',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: null,
-          },
-          validate: {
-            payload: ItemDataSchema.required(),
-            params: Joi.object({
-              id: Joi.number().required(),
-            }).required(),
-          },
-        },
-        async handler(request) {
-          const { id } = request.params;
-          await updateItem(id, request.payload);
-          return null;
-        },
-      });
+        return mapItemToItemResponse(item);
+      },
+    });
 
-      await server.route({
-        method: 'DELETE',
-        path: '/{id}',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: null,
-          },
-          validate: {
-            params: Joi.object({
-              id: Joi.number().required(),
-            }).required(),
-          },
+    await server.route({
+      method: 'POST',
+      path: '/',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: ItemResponseSchema,
         },
-        async handler(request) {
-          const { id } = request.params;
-          await deleteItem(id);
-          return null;
+        validate: {
+          payload: ItemDataSchema.required(),
         },
-      });
+      },
+      async handler(request) {
+        const item = await createItem(request.payload);
+        const forwarded = await server.inject(`${server.realm.modifiers.route.prefix}/${item.id}`);
 
-      /** delete all items */
-      await server.route({
-        method: 'DELETE',
-        path: '/',
-        options: {
-          tags: ['api'],
-          response: {
-            schema: null,
-          },
+        return forwarded.result as ItemResponse;
+      },
+    });
+
+    await server.route({
+      method: 'PUT',
+      path: '/{id}',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: null,
         },
-        async handler() {
-          await deleteAllItems();
-          return null;
+        validate: {
+          payload: ItemDataSchema.required(),
+          params: Joi.object({
+            id: Joi.number().required(),
+          }).required(),
         },
-      });
-    },
+      },
+      async handler(request) {
+        const { id } = request.params;
+        await updateItem(id, request.payload);
+        return null;
+      },
+    });
+
+    await server.route({
+      method: 'DELETE',
+      path: '/{id}',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: null,
+        },
+        validate: {
+          params: Joi.object({
+            id: Joi.number().required(),
+          }).required(),
+        },
+      },
+      async handler(request) {
+        const { id } = request.params;
+        await deleteItem(id);
+        return null;
+      },
+    });
+
+    /** delete all items */
+    await server.route({
+      method: 'DELETE',
+      path: '/',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: null,
+        },
+      },
+      async handler() {
+        await deleteAllItems();
+        return null;
+      },
+    });
+  },
 };
