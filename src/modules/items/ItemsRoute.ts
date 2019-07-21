@@ -12,6 +12,7 @@ import {
   deleteAllItems,
   Item,
 } from 'src/models/Item';
+import { getConfig } from '../../config';
 
 const ItemResponseSchema = ItemSchema.keys({
   url: Joi.string().required(),
@@ -21,7 +22,8 @@ type ItemResponse = Joi.SchemaValue<typeof ItemResponseSchema>;
 export const ItemRoutePlugin: Plugin<never> = {
   name: 'Item Routes',
   async register(server) {
-    const BASE_ROUTE_URL = server.info.uri + server.realm.modifiers.route.prefix;
+    const BASE_ROUTE_URL =
+      (getConfig('PUBLIC_DOMAIN') || server.info.uri) + server.realm.modifiers.route.prefix;
 
     function mapItemToItemResponse(item: Item): ItemResponse {
       return {
