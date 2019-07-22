@@ -1,4 +1,4 @@
-# Todo-Backend shaped vertsion of Across Stack: Node.js — HapiJS + TypeScript
+# Todo-Backend shaped version of Across Stack: Node.js — HapiJS + TypeScript
 ## Author: Michał Miszczyszyn [https://typeofweb.com/](https://typeofweb.com/)
 ## Contributor: Mateusz Angulski [https://angulski.pl/](https://angulski.pl/)
 
