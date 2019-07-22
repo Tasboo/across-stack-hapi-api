@@ -5,6 +5,8 @@ export const ItemDataSchema = Joi.object({
   completed: Joi.boolean()
     .optional()
     .default(false),
+  order: Joi.number()
+    .optional(),
 })
   .label('ItemData')
   .required();
@@ -15,6 +17,7 @@ export const OptionalItemDataSchema = ItemDataSchema.optionalKeys('title', 'comp
 
 export const ItemSchema = ItemDataSchema.keys({
   id: Joi.number().required(),
+  order: Joi.number().required(),
 })
   .label('Item')
   .required();
@@ -36,9 +39,11 @@ export async function getItemById(id: Item['id']): Promise<Item | undefined> {
 
 export async function createItem(itemData: ItemData): Promise<Item> {
   const id = ++lastId;
+  const order = -1 * id;
 
   const newItem = {
     id,
+    order,
     ...itemData,
   };
 
