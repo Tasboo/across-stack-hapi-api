@@ -2,14 +2,28 @@ import Joi from 'joi';
 
 export const ItemDataSchema = Joi.object({
   title: Joi.string().required(),
-}).label('ItemData').required();
+  completed: Joi.boolean()
+    .optional()
+    .default(false),
+  order: Joi.number()
+    .optional(),
+})
+  .label('ItemData')
+  .required();
+
+export const OptionalItemDataSchema = ItemDataSchema.optionalKeys('title', 'completed')
+  .label('OptionalItemData')
+  .required();
 
 export const ItemSchema = ItemDataSchema.keys({
   id: Joi.number().required(),
-  createdOn: Joi.date().required(),
-}).label('Item').required();
+  order: Joi.number().required(),
+})
+  .label('Item')
+  .required();
 
 export type ItemData = Joi.SchemaValue<typeof ItemDataSchema>;
+export type OptionalItemData = Joi.SchemaValue<typeof OptionalItemDataSchema>;
 export type Item = Joi.SchemaValue<typeof ItemSchema>;
 
 let lastId = 0;
@@ -25,18 +39,20 @@ export async function getItemById(id: Item['id']): Promise<Item | undefined> {
 
 export async function createItem(itemData: ItemData): Promise<Item> {
   const id = ++lastId;
+  const order = -1 * id;
 
   const newItem = {
     id,
-    createdOn: new Date(),
+    order,
     ...itemData,
   };
 
   items = [...items, newItem];
+
   return newItem;
 }
 
-export async function updateItem(id: Item['id'], itemData: ItemData): Promise<void> {
+export async function updateItem(id: Item['id'], itemData: OptionalItemData): Promise<void> {
   items = items.map(i => {
     if (i.id === id) {
       return {
