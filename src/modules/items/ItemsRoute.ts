@@ -11,19 +11,21 @@ import {
   ItemDataSchema,
   deleteAllItems,
   Item,
+  OptionalItemDataSchema,
 } from 'src/models/Item';
 import { getConfig } from '../../config';
 
 const ItemResponseSchema = ItemSchema.keys({
   url: Joi.string().required(),
 }).required();
+
 type ItemResponse = Joi.SchemaValue<typeof ItemResponseSchema>;
 
 export const ItemRoutePlugin: Plugin<never> = {
   name: 'Item Routes',
   async register(server) {
-    const BASE_ROUTE_URL =
-      (getConfig('PUBLIC_DOMAIN') || server.info.uri) + server.realm.modifiers.route.prefix;
+    const ROUTE_PREFIX = server.realm.modifiers.route.prefix;
+    const BASE_ROUTE_URL = (getConfig('PUBLIC_DOMAIN') || server.info.uri) + ROUTE_PREFIX;
 
     function mapItemToItemResponse(item: Item): ItemResponse {
       return {
@@ -83,12 +85,36 @@ export const ItemRoutePlugin: Plugin<never> = {
           schema: ItemResponseSchema,
         },
         validate: {
-          payload: ItemDataSchema.required(),
+          payload: ItemDataSchema,
         },
       },
       async handler(request) {
         const item = await createItem(request.payload);
-        const forwarded = await server.inject(`${server.realm.modifiers.route.prefix}/${item.id}`);
+        const forwarded = await server.inject(`${ROUTE_PREFIX}/${item.id}`);
+
+        return forwarded.result as ItemResponse;
+      },
+    });
+
+    await server.route({
+      method: 'PATCH',
+      path: '/{id}',
+      options: {
+        tags: ['api'],
+        response: {
+          schema: ItemResponseSchema,
+        },
+        validate: {
+          payload: OptionalItemDataSchema,
+          params: Joi.object({
+            id: Joi.number().required(),
+          }).required(),
+        },
+      },
+      async handler(request) {
+        const { id } = request.params;
+        await updateItem(id, request.payload);
+        const forwarded = await server.inject(`${ROUTE_PREFIX}/${id}`);
 
         return forwarded.result as ItemResponse;
       },
@@ -103,7 +129,7 @@ export const ItemRoutePlugin: Plugin<never> = {
           schema: null,
         },
         validate: {
-          payload: ItemDataSchema.required(),
+          payload: ItemDataSchema,
           params: Joi.object({
             id: Joi.number().required(),
           }).required(),
@@ -112,6 +138,7 @@ export const ItemRoutePlugin: Plugin<never> = {
       async handler(request) {
         const { id } = request.params;
         await updateItem(id, request.payload);
+
         return null;
       },
     });

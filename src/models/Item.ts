@@ -2,14 +2,25 @@ import Joi from 'joi';
 
 export const ItemDataSchema = Joi.object({
   title: Joi.string().required(),
-}).label('ItemData').required();
+  completed: Joi.boolean()
+    .optional()
+    .default(false),
+})
+  .label('ItemData')
+  .required();
+
+export const OptionalItemDataSchema = ItemDataSchema.optionalKeys('title', 'completed')
+  .label('OptionalItemData')
+  .required();
 
 export const ItemSchema = ItemDataSchema.keys({
   id: Joi.number().required(),
-  completed: Joi.boolean().required(),
-}).label('Item').required();
+})
+  .label('Item')
+  .required();
 
 export type ItemData = Joi.SchemaValue<typeof ItemDataSchema>;
+export type OptionalItemData = Joi.SchemaValue<typeof OptionalItemDataSchema>;
 export type Item = Joi.SchemaValue<typeof ItemSchema>;
 
 let lastId = 0;
@@ -28,7 +39,6 @@ export async function createItem(itemData: ItemData): Promise<Item> {
 
   const newItem = {
     id,
-    completed: false,
     ...itemData,
   };
 
@@ -37,7 +47,7 @@ export async function createItem(itemData: ItemData): Promise<Item> {
   return newItem;
 }
 
-export async function updateItem(id: Item['id'], itemData: ItemData): Promise<void> {
+export async function updateItem(id: Item['id'], itemData: OptionalItemData): Promise<void> {
   items = items.map(i => {
     if (i.id === id) {
       return {
